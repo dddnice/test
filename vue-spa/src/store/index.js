@@ -42,6 +42,16 @@ const store = new Vuex.Store({
 
             });
 
+        },
+
+        getCategories(state) {
+
+            let cats = state.news.map(item => {
+               return item.category;
+            });
+
+            return [...new Set(cats)];
+
         }
     },
 
