@@ -40,4 +40,31 @@ export default {
     margin: 0 auto;
   }
 
+  .checkbox {
+    position: relative;
+    padding: 0 0 0 30px;
+    display: inline-block;
+
+    input {
+      display: none;
+
+      &~span {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background: url(/public/input-sprite.png) no-repeat top left;
+        background-position: 0 0;
+        content: '';
+        display: block;
+        z-index: 9;
+        left: 0;
+        top: 0;
+      }
+
+      &:checked~span {
+        background-position: 0 -40px;
+      }
+    }
+
+  }
 </style>

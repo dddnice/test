@@ -2,10 +2,14 @@
     <div class="filters">
         <input type="text" class="filters__search" placeholder="Начните что-то вводить..." @keyup="searchQuery()" v-model="query" />
         <div class="filters__categories">
-            <label v-for="(item, index) in newsCategories" :key="index">
-                <input type="checkbox" v-bind:id="'c_' + item" v-bind:value="item" v-model="categories" @change="categoryQuery" />
-                {{item}}
-            </label>
+            <div>Categories:</div>
+            <div>
+                <label v-for="(item, index) in newsCategories" :key="index" class="checkbox">
+                    <input type="checkbox" v-bind:id="'c_' + item" v-bind:value="item" v-model="categories" @change="categoryQuery" />
+                    <span></span>
+                    {{item}}
+                </label>
+            </div>
         </div>
     </div>
 </template>
@@ -46,6 +50,16 @@
         &__categories {
             padding: 10px;
             border: 1px #eee solid;
+            display: flex;
+
+            label {
+                text-transform: capitalize;
+                margin: 0 10px;
+
+                @media screen and (max-width: 860px) {
+                    display: block;
+                }
+            }
         }
 
         &__search {
