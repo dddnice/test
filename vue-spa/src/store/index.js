@@ -37,7 +37,7 @@ const store = new Vuex.Store({
                 if (state.searchParams.filterByCategory.length) {
                     return x.title.match(state.searchParams.filterByName) && state.searchParams.filterByCategory.indexOf( x.category ) !== -1;
                 } else {
-                    return x.title.match(state.searchParams.filterByName);
+                    return x.title.toLowerCase().match(state.searchParams.filterByName.toLowerCase());
                 }
 
             });
