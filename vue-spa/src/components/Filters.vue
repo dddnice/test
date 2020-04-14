@@ -2,17 +2,9 @@
     <div class="filters">
         <input type="text" class="filters__search" placeholder="Начните что-то вводить..." @keyup="searchQuery()" v-model="query" />
         <div class="filters__categories">
-            <label>
-                <input type="checkbox" id="c_image" value="image" v-model="categories" @change="categoryQuery" />
-                Image
-            </label>
-            <label>
-                <input type="checkbox" id="c_video" value="video" v-model="categories" @change="categoryQuery" />
-                Video
-            </label>
-            <label>
-                <input type="checkbox" id="c_text" value="text" v-model="categories" @change="categoryQuery" />
-                Text
+            <label v-for="(item, index) in newsCategories" :key="index">
+                <input type="checkbox" v-bind:id="'c_' + item" v-bind:value="item" v-model="categories" @change="categoryQuery" />
+                {{item}}
             </label>
         </div>
     </div>
@@ -24,6 +16,12 @@
             return {
                 query: "",
                 categories: []
+            }
+        },
+
+        computed: {
+            newsCategories() {
+                return this.$store.getters.getCategories;
             }
         },
 
