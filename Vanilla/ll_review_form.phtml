@@ -1,0 +1,635 @@
+<?php
+    use OHT\Modules\Post\LL\LLReview;
+    use OHT\Modules\LLTransScore\LLError;
+
+    $ll = new LLReview($this->project);
+    $llRoundEnd = $ll->getRoundEndDate();
+?>
+
+<link rel="stylesheet" media="screen" href="/public/frontend/css/pages/ll-project.css" />
+
+<div id="ll_placeholder" class="clearfix">
+    <div class="ll-main">
+        <div class="section ll-header-placeholder">
+            <div class="ll-header">
+                <div class="main-title float-l">
+                    <h3><?php _e("Add Your Review"); ?></h3>
+                    <div>
+                        <?php
+                            if ($this->project->getSourceLanguage() === 'English' &&
+                                ($this->project->getTargetLanguage() === 'Spanish' || $this->project->getTargetLanguage() === 'Spanish (Latin-America)')) {
+                                $guidelinesUrl = "https://oht-assets.s3.amazonaws.com/resources/translators/guidelines/LL+Spanish.pdf";
+                            } else if (
+                                    $this->project->getSourceLanguage() === 'English' &&
+                                    $this->project->getTargetLanguage() === 'Hebrew') {
+                                $guidelinesUrl = "https://oht-assets.s3.amazonaws.com/resources/translators/guidelines/LL+Hebrew.pdf";
+                            } else {
+                                $guidelinesUrl = "https://oht-assets.s3.amazonaws.com/resources/translators/guidelines/LL+General.pdf";
+                            }
+                        ?>
+                        <a href="<?=$guidelinesUrl; ?>" target="_blank">
+                            <?php _e("LL review guidelines"); ?>
+                        </a>
+                    </div>
+                    <?php if (
+                            $this->project->getMeta(\Project::META_DEFAULT_CAT_VENDOR) === 'xtm' ||
+                            $this->project->getMeta(\Project::META_DEFAULT_CAT_VENDOR) === 'smartcat') { ?>
+                        <div id="llCatToolLink"></div>
+                    <? } ?>
+                </div>
+
+                <div class="ll-header__right">
+                    <div class="review-time">
+                        <?php if ($llRoundEnd && !$ll->isToggled()) { ?>
+                        <div style="margin: 0 0 10px;">
+                            <?php _e("Time left"); ?>: <b><oht-timer timer-end="<?= $llRoundEnd?>">00:00:00</oht-timer></b>
+                        </div>
+                        <?php } ?>
+
+                        <?php if ($this->showAddTimeButton) : ?>
+                            <form method="post">
+                                <input type="hidden" name="action" value="addLLTime"/>
+                                <label for="add_hours"><?= __('Request more time for review'); ?></label>
+                                <input type="number" id="add_hours" name="hours_request" placeholder="Number of hours" min="1">
+                                <button type="submit" class="btn btn-orange btn-small" id="request_time"><?= __('Request'); ?></button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="ll-total-score">
+                        <div>Total Score:</div>
+                        <div class="circle">6</div>
+                        <div class="review-action"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div class="section ll-body-placeholder bg-oht-7">
+            <div class="ll-form">
+                <div class="step-1">
+                    <div class="ll-choose-block _1">
+                        <div class="pf-block">
+                            <button class="btn btn-success modal-box-call" href="#confirm-perfect">
+                                <?= __('Perfect translation'); ?> / <?= __('Send to the client'); ?>
+                            </button>
+                        </div>
+
+                        <div class="pf-block">
+                            <button class="btn btn-warning" data-choose-toggler>
+                                <?= __('Has room for improvement?'); ?>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="ll-choose-block _2 hidden">
+                        <div class="ll-errors-list"></div>
+
+                        <div class="ll-error-line">
+                            <div class="ll-error-line-btn">
+                                <div class="dropdown">
+                                    <button class="btn btn-warning dropdown-toggle dropdownType" type="button">
+                                        + <?= __('Add an error'); ?>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <div class="dropdown-menu ll-choose-list hidden">
+                                        <?php foreach (LLError::titles() as $slug => $name) : ?>
+                                            <?php $description = LLError::getDescription($slug); ?>
+                                            <div class="ll-choose-item" data-addError="<?=$slug?>" title="<?=$description;?>">
+                                                <?= $name; ?>
+                                            </div>
+                                        <?php endforeach;  ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ll-error-line-info"></div>
+                        </div>
+                    </div>
+
+                    <div class="severity-block hidden">
+                        <div class="dropdown">
+                            <button class="btn btn-warning dropdown-toggle" type="button">
+                                <?= __('Severity'); ?>
+                                <span class="caret"></span>
+                            </button>
+                            <div class="dropdown-menu ll-choose-list hidden">
+                                <div class="ll-choose-item" data-addSeverity="minor">Minor</div>
+                                <div class="ll-choose-item" data-addSeverity="major">Major</div>
+                                <div class="ll-choose-item" data-addSeverity="critical">Critical</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="step-2 hidden">
+                    <div><b><?php _e("Comment"); ?></b></div>
+                    <textarea id="ll_comment" placeholder="<?php _e("The reviewer comments should be shown here"); ?>"></textarea>
+
+                    <div class="ll-footer">
+                        <div class="pull-right">
+                            <button class="btn btn-primary btn-lg" id="ll_send"><?php _e("SUBMIT"); ?></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="ll-footer-errors"></div>
+
+                <div class="ll-steps">
+                    <button class="btn btn-primary ll-prev hidden">Previous Step</button>
+                    <button class="btn btn-success ll-next" disabled>Next Step</button>
+                    <div class="clear"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="confirm-perfect" class="no-display">
+    <h3 class="border-b">
+        <?php _e('Confirm')?>
+    </h3>
+    <p><?php _e('Are you sure the translation is error-free and should be sent to the client?')?></p>
+    <p>&nbsp;</p>
+    <p>
+        <button class="btn btn-orange btn-large" id="sendPerfectBtn"><?php _e('YES')?></button>
+        <button href="#" class="btn btn-large close-mb-btn"><?php _e('NO')?></button>
+    </p>
+</div>
+
+<script type="application/javascript">
+    (function ($) {
+        $(document).ready(function () {
+            var errorsList = {
+                errorTypes: []
+            };
+            var totalScore;
+            var expectedAction;
+            var currentError = {
+                category: '',
+                title: '',
+                severity: '',
+                comment: ''
+            };
+
+            var currentPage = 1;
+            var supportsLocalStorage = localStorageSupport();
+            var severitySelectOptions = ['minor', 'major', 'critical'];
+            var typeSelectOptions = [];
+
+            <?php foreach (LLError::titles() as $slug => $name) : ?>
+            <?php $description = LLError::getDescription($slug); ?>
+            typeSelectOptions.push({
+                'slug': '<?=$slug?>',
+                'name': '<?= $name; ?>',
+                'indication': '<?= $description; ?>'
+            });
+            <?php endforeach;  ?>
+
+            $('.ll-form').on('click', '.dropdown-toggle', function () {
+                $(this).next('.dropdown-menu').toggleClass('hidden');
+            });
+
+            $('.ll-next').on('click', function () {
+                $('.step-' + currentPage).addClass('hidden');
+                currentPage ++ ;
+                $('.step-' + currentPage).removeClass('hidden');
+
+                if (currentPage === 2) {
+                    $('.ll-next').addClass('hidden');
+                    $('.ll-next').attr({'disabled': 'disabled'});
+                } else {
+                    $('.ll-next').removeClass('hidden');
+                    $('.ll-next').removeAttr('disabled');
+                }
+
+                if (currentPage === 1) {
+                    $('.ll-prev').addClass('hidden');
+                } else {
+                    $('.ll-prev').removeClass('hidden');
+                }
+            });
+
+            $('.ll-prev').on('click', function () {
+
+                if (currentPage === 1) {
+                    $('.ll-prev').addClass('hidden');
+                    $('.ll-choose-block._1').removeClass('hidden');
+                    $('.ll-choose-block._2').addClass('hidden');
+                } else {
+                    $('.ll-prev').removeClass('hidden');
+                    $('.ll-choose-block._2').removeClass('hidden');
+                    $('.ll-choose-block._1').addClass('hidden');
+
+                    $('.step-' + currentPage).addClass('hidden');
+                    currentPage --;
+                    $('.step-' + currentPage).removeClass('hidden');
+
+                }
+
+                if (currentPage === 2) {
+                    $('.ll-next').attr({'disabled': 'disabled'});
+                    $('.ll-next').addClass('hidden');
+                } else {
+                    $('.ll-next').removeAttr('disabled');
+                    $('.ll-next').removeClass('hidden');
+                }
+            });
+
+            $('.ll-form').on('click', '[data-addSeverity]', function () {
+                currentError.severity = $(this).data('addseverity');
+                $('.ll-form').find('.severity-cell').find('.dropdown-toggle').text($(this).data('addseverity'));
+                $('.ll-form').find('.severity-cell').find('.ll-choose-list').addClass('hidden');
+                $('[data-addSeverity').removeClass('active');
+                $(this).addClass('active');
+            });
+
+            $('.ll-form').on('click', '.addBtn', function () {
+                currentError.comment = $(this).closest('.ll-error-line').find('.comment-cell textarea').val();
+                currentError.title = $(this).closest('.ll-error-line').find('.dropdownType').text();
+
+                if (currentError.category !== 'll_suggestion' && !currentError.severity) {
+                    alert('Please, choose severity');
+                } else {
+                    if (!currentError.comment) {
+                        alert('Please, add comment');
+                    } else {
+                        preSendError(currentError);
+                    }
+                }
+            });
+
+            $('.ll-form').on('click', '.ll-remove-btn', function () {
+                var currentItem = $(this).closest('.ll-errors-item').index();
+                if (localStorage.getItem('ll_errors_' + <?=$this->project->getID(); ?>)) {
+                    var errors = JSON.parse(localStorage.getItem('ll_errors_' + <?=$this->project->getID(); ?>)).errorsList;
+
+                    errors.errorTypes.splice(currentItem, 1);
+
+                    errorsList = errors;
+
+                    sendError(errors);
+                }
+            });
+
+            $('.ll-form').on('click', '.ll-edit-btn', function () {
+                var commentBlock = $(this).closest('.ll-errors-item').find('.comment');
+                var categoryBlock = $(this).closest('.ll-errors-item').find('.category');
+                var severityBlock = $(this).closest('.ll-errors-item').find('.severity');
+                var category = $(this).closest('.ll-errors-item').attr('data-type');
+
+                commentBlock.find('div').toggleClass('hidden');
+                categoryBlock.find('div').toggleClass('hidden');
+
+                if (category !== 'll_suggestion') {
+                    severityBlock.find('div').toggleClass('hidden');
+                }
+            });
+
+
+            $('body').on('change', '.editType', function() {
+                var category = $(this).val();
+                var severityBlock = $(this).closest('.ll-errors-item').find('.severity');
+
+                if (category === 'll_suggestion') {
+                    severityBlock.find('.value').addClass('hidden');
+                    severityBlock.find('.editValue').addClass('hidden');
+                } else {
+                    severityBlock.find('.value').addClass('hidden');
+                    severityBlock.find('.editValue').removeClass('hidden');
+                }
+            });
+
+            $('.ll-form').on('click', '.ll-edit-save', function () {
+                var currentItem = $(this).closest('.ll-errors-item');
+                var currentItemIndex = $(this).closest('.ll-errors-item').index();
+                var newCategory = currentItem.find('.category').find('select').val();
+                var newTitle = currentItem.find('.category').find('select option:selected').text();
+                var newSeverity = currentItem.find('.severity').find('select').val();
+                var newComment = currentItem.find('.comment').find('textarea').val();
+
+                if (newComment) {
+                    if (localStorage.getItem('ll_errors_' + <?=$this->project->getID(); ?>)) {
+                        var errors = JSON.parse(localStorage.getItem('ll_errors_' + <?=$this->project->getID(); ?>)).errorsList;
+                        errors.errorTypes[currentItemIndex].category = newCategory;
+                        errors.errorTypes[currentItemIndex].title = newTitle;
+                        errors.errorTypes[currentItemIndex].comment = newComment;
+                        if (newCategory === 'll_suggestion') {
+                            delete errors.errorTypes[currentItemIndex].severity;
+                        } else {
+                            errors.errorTypes[currentItemIndex].severity = newSeverity;
+                        }
+                        errorsList = errors;
+                        sendError(errors);
+                    }
+                } else {
+                    alert('Please, add comment');
+                }
+            });
+
+            $('[data-addError]').on('click', function () {
+                var category = $(this).data('adderror');
+
+                currentError.category = category;
+                currentError.title = $(this).text().trim();
+                currentError.severity = '';
+
+                $('.dropdownType').html(currentError.title).next('.dropdown-menu').addClass('hidden');
+
+                $('[data-addError').removeClass('active');
+                $(this).addClass('active');
+
+                var severityDropdown = $('<div>')
+                    .addClass('severity-cell');
+
+                var commentBlock = $('<div>')
+                    .addClass('comment-cell')
+                    .append(
+                        $('<textarea type="text" placeholder="Comment"></textarea>')
+                    );
+
+                var addBtn = $('<button>')
+                    .addClass('btn btn-warning addBtn')
+                    .text('Add');
+
+                if (category !== 'll_suggestion') {
+                    severityDropdown.append($('.severity-block').html());
+                }
+
+                $('.ll-error-line-info')
+                    .html(severityDropdown)
+                    .append(commentBlock)
+                    .append(addBtn);
+            });
+
+            var preSendError = function (data) {
+                errorsList.errorTypes.push(data);
+                currentError = {};
+
+                sendError(errorsList);
+            };
+
+            var sendError = function (errorsList) {
+                var _project_id = <?= $this->project->getID() ?>;
+                var csrf = '?CSRFToken=' + OHT_init.vars.get('CSRFToken');
+
+                $.ajax({
+                    type: 'POST',
+                    url: OHT_init.vars.get('url') + '/api/2/project/' + _project_id + '/ll-score' + csrf,
+                    data: JSON.stringify(errorsList),
+                    dataType: "json",
+                    success: function (response) {
+                        processingAnswer(response.results);
+                        checkErrorsCount();
+                        $('.dropdownType').html('+ <?= __('Add an error'); ?>');
+                    },
+                    error:  function(xhr, str){
+
+                    }
+                });
+            };
+
+            var processingAnswer = function (data) {
+                $('.ll-error-line-info').html('');
+                $('.ll-form .ll-choose-list').addClass('hidden');
+                $('.ll-form .ll-choose-item').removeClass('active');
+
+                var _project_id = <?= $this->project->getID() ?>;
+                totalScore = data.totalScore;
+                expectedAction = data.expectedAction;
+
+                if (supportsLocalStorage) {
+                    var saveData = {
+                        errorsList: errorsList,
+                        quality: data.quality,
+                        totalScore: data.totalScore,
+                        expectedAction: expectedAction,
+                    };
+
+                    localStorage.setItem('ll_errors_' + _project_id, JSON.stringify(saveData));
+                }
+
+                drawErrors();
+            };
+
+            var drawExpectedAction = function () {
+                var text = 'Based on the score, this project will be ';
+                if (expectedAction) {
+                    switch (expectedAction) {
+                        case 'll_revise_reopen':
+                        case 'll_revise_reproof':
+                            text += 'returned to the linguist for revision';
+                            break;
+                        case 'll_reopen':
+                            text += 'assigned to another translator';
+                            break;
+                        case 'll_expose':
+                        default:
+                            text += 'sent to the client';
+                            break;
+                    }
+                    $('.ll-total-score .review-action').text(text);
+                }
+            }
+
+            var drawErrors = function () {
+                var errors = errorsList;
+                var isMultipleLL = <?= (int)$this->project->getMeta(Project::META_LL_MULTIPLE) ?>;
+
+                if (totalScore) {
+                    $('.ll-total-score .circle').text(totalScore);
+                    if (!isMultipleLL) {
+                        drawExpectedAction();
+                    }
+                }
+
+                if (errors) {
+                    $('.ll-errors-list').html('');
+
+                    errors.errorTypes.map(function (error, key) {
+                        var editComment = $('<textarea/>')
+                            .attr('type', 'text')
+                            .val(error.comment);
+
+                        var severitySelect = function (severity, category) {
+                            var selectBlock = $('<select>');
+
+                            severitySelectOptions.map(function (item) {
+                                selectBlock.append(
+                                    $('<option>')
+                                        .val(item)
+                                        .html(item)
+                                        .attr('selected', item === severity)
+                                )
+                            });
+
+                            return $('<div/>').append(selectBlock).addClass('editValue hidden');
+                        }
+
+                        var typeSelect = function (category) {
+                            var selectBlock = $('<select>').addClass('editType');
+
+                            typeSelectOptions.map(function (item) {
+                                selectBlock.append(
+                                    $('<option>')
+                                        .val(item.slug)
+                                        .html(item.name)
+                                        .attr('selected', item.slug === category)
+                                )
+                            });
+
+                            return selectBlock;
+                        };
+
+                        var editCommentSave = $('<button/>').text('Save').addClass('btn btn-success btn-small ll-edit-save');
+
+                        var str = $('<div>')
+                            .addClass('ll-errors-item')
+                            .attr('data-type', error.category)
+                            .append(
+                                $('<div>').html(key + 1 + '.').addClass('number')
+                            ).append(
+                                $('<div>')
+                                    .append($('<div/>')
+                                        .html(error.title)
+                                    )
+                                    .addClass('category')
+                                    .append($('<div/>')
+                                        .append(typeSelect(error.category))
+                                        .addClass('hidden')
+                                    )
+                            ).append(
+                                $('<div>')
+                                    .append($('<div/>')
+                                        .html(error.severity)
+                                        .addClass('value')
+                                    )
+                                    .addClass('severity')
+                                    .append(severitySelect(error.severity, error.category))
+                            ).append(
+                                $('<div>')
+                                    .append($('<div/>').html(error.comment))
+                                    .addClass('comment')
+                                    .append($('<div/>')
+                                        .append(editComment)
+                                        .append(editCommentSave)
+                                        .addClass('hidden'))
+                            ).append(
+                                $('<div>').html(
+                                    $('<a>')
+                                        .addClass('ll-edit-btn')
+                                        .text('Edit')
+                                )
+                            ).append(
+                                $('<div>').html(
+                                    $('<a>')
+                                        .addClass('ll-remove-btn')
+                                        .text('Remove')
+                                )
+                            );
+
+                        $('.ll-errors-list').append(str);
+                    });
+                }
+            };
+
+            var checkLocalStorage = function () {
+                if (supportsLocalStorage) {
+                    if (localStorage.getItem('ll_errors_' + <?=$this->project->getID(); ?>)) {
+                        errorsList = JSON.parse(localStorage.getItem('ll_errors_' + <?=$this->project->getID(); ?>)).errorsList;
+                        totalScore = JSON.parse(localStorage.getItem('ll_errors_' + <?=$this->project->getID(); ?>)).totalScore;
+                        expectedAction = JSON.parse(localStorage.getItem('ll_errors_' + <?=$this->project->getID(); ?>)).expectedAction;
+
+                        if (errorsList.errorTypes.length) {
+                            $('.ll-choose-block').toggleClass('hidden');
+                        }
+                    }
+                }
+            };
+
+            checkLocalStorage();
+
+            drawErrors();
+
+            var checkErrorsCount = function () {
+                if (errorsList.errorTypes.length) {
+                    $('.ll-next').removeAttr('disabled');
+                } else {
+                    $('.ll-next').attr({'disabled': 'disabled'});
+                }
+            };
+
+            checkErrorsCount();
+
+            var projectReproofAllowed = <?= (int) ($this->project->isReProofAllowed() && ! $this->project->isMTProject()) ?>;
+
+            $('[data-choose-toggler]').on('click', function() {
+                $('.ll-choose-block').toggleClass('hidden');
+            });
+
+            var sendLL = function(type) {
+                var _project_id = <?= $this->project->getID() ?>;
+                var csrf = '?CSRFToken=' + OHT_init.vars.get('CSRFToken');
+                var comment = $('#ll_comment').val();
+                var errorField = $( ".ll-footer-errors" );
+
+                var data = {
+                    errorTypes: errorsList.errorTypes,
+                    reviewAction: expectedAction,
+                    comment: comment,
+                    totalScore: totalScore
+                };
+
+                if (type === 'perfect') {
+                    data.errorTypes = [];
+                    data.reviewAction = 'll_expose';
+                    data.comment = 'The translation is perfect. Great job!';
+                    data.totalScore = 6;
+                }
+
+                if (projectReproofAllowed === 0 && expectedAction === 'll_revise_reproof') {
+                    data.reviewAction = 'll_revise_reopen';
+                }
+
+                errorField.html('');
+
+                // Do API call to send data
+                $.ajax({
+                    type: 'POST',
+                    url: OHT_init.vars.get('url') + '/api/2/project/' + _project_id + '/ll-submit' + csrf,
+                    data: JSON.stringify(data),
+                    success: function (response) {
+                        if (response.errors.length == 0) {
+                            if (supportsLocalStorage) {
+                                if (localStorage.getItem('ll_errors_' + _project_id)) {
+                                    localStorage.removeItem('ll_errors_' + _project_id);
+                                }
+                            }
+
+                            // if ll_form is in cat tool - make redirect to project page
+                            if ($('#llContainer').length) {
+                                location.href = `/project/${_project_id}/#ll_placeholder`;
+                            } else {
+                                location.reload();
+                            }
+                        } else {
+                            $(".mb-close").trigger('click');
+                            errorField.append(response.errors[0]).show().delay(4000).fadeOut(500);
+                            return false;
+                        }
+                    },
+                    error:  function(xhr, str){}
+                });
+            };
+            
+            $('#ll_send').on('click', sendLL);
+
+            var sendLLPerfect = function() {
+                sendLL('perfect');
+            };
+
+            $('body').on('click', '#sendPerfectBtn', sendLLPerfect);
+
+        });
+    })(jQuery);
+</script>
